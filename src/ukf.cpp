@@ -90,3 +90,73 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
    * You can also calculate the radar NIS, if desired.
    */
 }
+
+/**
+ * Programming assignment functions:
+ */
+
+void UKF::AugmentedSigmaPoints(MatrixXd* Xsig_out) {
+  // create augmented mean vector
+  VectorXd x_aug = VectorXd(n_aug_);
+
+  // create augmented state covariance
+  MatrixXd P_aug = MatrixXd(n_aug_, n_aug_);
+
+  // create sigma point matrix
+  MatrixXd Xsig_aug = MatrixXd(n_aug_, 2 * n_aug_ + 1);
+
+  // create augmented mean state, remember mean of noise is zero
+
+  // create augmented covariance matrix
+
+  // create square root matrix
+
+  // create augmented sigma points
+
+  // write result
+  *Xsig_out = Xsig_aug;
+}
+
+void UKF::PredictMeanAndCovariance(VectorXd* x_out, MatrixXd* P_out) {
+  // create vector for predicted state
+  VectorXd x = VectorXd(n_x_);
+
+  // create covariance matrix for prediction
+  MatrixXd P = MatrixXd(n_x_, n_x_);
+
+  // set weights
+
+  // predict state mean
+
+  // predict state covariance matrix
+
+  // write result
+  *x_out = x;
+  *P_out = P;
+}
+
+void UKF::PredictRadarMeasurement(MatrixXd* Zsig_out,
+                                  VectorXd* z_out, MatrixXd* S_out) {
+  // set measurement dimension, radar can measure r, phi, and r_dot
+  int n_z = 3;
+
+  // create matrix for sigma points in measurement space
+  MatrixXd Zsig = MatrixXd(n_z, 2 * n_aug_ + 1);
+
+  // mean predicted measurement
+  VectorXd z_pred = VectorXd(n_z);
+
+  // measurement covariance matrix S
+  MatrixXd S = MatrixXd(n_z,n_z);
+
+  // transform sigma points into measurement space
+
+  // calculate mean predicted measurement
+
+  // calculate innovation covariance matrix S
+
+  // write result
+  *Zsig_out = Zsig;
+  *z_out = z_pred;
+  *S_out = S;
+}

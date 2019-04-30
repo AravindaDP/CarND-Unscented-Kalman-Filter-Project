@@ -41,6 +41,15 @@ class UKF {
    */
   void UpdateRadar(MeasurementPackage meas_package);
 
+  /**
+   * Student assignment functions
+   */
+  virtual void AugmentedSigmaPoints(Eigen::MatrixXd* Xsig_out);
+  virtual void PredictMeanAndCovariance(Eigen::VectorXd* x_pred,
+                                        Eigen::MatrixXd* P_pred);
+  virtual void PredictRadarMeasurement(Eigen::MatrixXd* Zsig_out,
+                                       Eigen::VectorXd* z_out,
+                                       Eigen::MatrixXd* S_out);
 
   // initially set to false, set to true in first call of ProcessMeasurement
   bool is_initialized_;

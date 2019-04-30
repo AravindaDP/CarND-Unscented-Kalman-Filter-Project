@@ -54,6 +54,6 @@ endif()
 enable_testing()
 
 # Now simply link against gtest or gtest_main as needed. Eg
-add_executable(UnscentedKFTests src/tools.cpp test/tools_test.cpp)
+add_executable(UnscentedKFTests src/tools.cpp src/ukf.cpp test/tools_test.cpp test/ukf_test.cpp)
 target_link_libraries(UnscentedKFTests gmock_main)
 add_test(NAME ukf_tests COMMAND UnscentedKFTests)

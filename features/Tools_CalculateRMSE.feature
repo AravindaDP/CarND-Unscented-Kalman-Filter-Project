@@ -1,5 +1,7 @@
 Feature: CalculateRMSE
-  Calculate RMSE
+  As a developer
+  I want Tools::CalculateRMSE function
+  So that I could evaluate UKF performance
 
   Scenario: When there are no estimations
     Given estimations length is 0

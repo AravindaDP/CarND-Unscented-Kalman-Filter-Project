@@ -1,3 +1,6 @@
+#ifndef MOCK_UKF_H
+#define MOCK_UKF_H
+
 #include "gmock/gmock.h"  // Brings in Google Mock.
 #include "../src/ukf.h"
 
@@ -63,3 +66,5 @@ class MockUKF : public UKF {
     return UKF::PredictRadarMeasurement(Zsig_out, z_out, S_out);
   }
 };
+
+#endif  // UKF_H

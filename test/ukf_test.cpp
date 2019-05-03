@@ -215,8 +215,6 @@ TEST_F(UKFTest, PredictRadarMeasurement_CalculatesZsigZPredAndS_FromXsigPred) {
   VectorXd expected_z_pred = VectorXd(n_z);
   expected_z_pred << 6.12155, 0.245993, 2.10313;
 
-  std::cout << z_pred << std::endl;
-
   ASSERT_TRUE(z_pred.isApprox(expected_z_pred, 0.00005));
 
   //create example matrix for predicted measurement covariance
@@ -304,6 +302,43 @@ TEST_F(UKFTest, UpdateRadar_CallsPredictRadarMeasurementThenCalculatesXAndP_ForG
 
   ASSERT_TRUE(ukf_.P_.isApprox(expected_P,0.000001));
 }
+
+TEST_F(UKFTest, ProcessMeasurement_CallsPredictThenUpdateRadar_ForSubsequentRADARMeasurements) {
+  MeasurementPackage first_measurement = {MeasurementPackage::RADAR, 1477010443050000,
+                                          Map<VectorXd>(vector<double>({0.898658, 0.617674, 1.7986}).data(), 3)};
+
+  MeasurementPackage second_measurement = {MeasurementPackage::RADAR, 1477010443150000,
+                                           Map<VectorXd>(vector<double>({0.910574, 0.610537, 1.46233}).data(), 3)};
+
+  {
+    InSequence ukf;
+
+    EXPECT_CALL(ukf_, Prediction(0.1));
+    EXPECT_CALL(ukf_, UpdateRadar(second_measurement));
+  }
+
+  ukf_.ProcessMeasurement(first_measurement);
+  ukf_.ProcessMeasurement(second_measurement);
+}
+
+TEST_F(UKFTest, ProcessMeasurement_CallsPredictThenUpdateLidar_ForSubsequentLASERMeasurements) {
+  MeasurementPackage first_measurement = {MeasurementPackage::LASER, 1477010443000000,
+                                          Map<VectorXd>(vector<double>({0.463227, 0.607415}).data(), 2)};
+
+  MeasurementPackage second_measurement = {MeasurementPackage::LASER, 1477010443100000,
+                                           Map<VectorXd>(vector<double>({0.968521, 0.40545}).data(), 2)};
+
+  {
+    InSequence ukf;
+
+    EXPECT_CALL(ukf_, Prediction(0.1));
+    EXPECT_CALL(ukf_, UpdateLidar(second_measurement));
+  }
+
+  ukf_.ProcessMeasurement(first_measurement);
+  ukf_.ProcessMeasurement(second_measurement);
+}
+
 
 TEST_F(UKFTest, UKF_PassesProjectRubric_ForDataSet1) {
   std::string in_file_name_ = "../data/obj_pose-laser-radar-synthetic-input.txt";

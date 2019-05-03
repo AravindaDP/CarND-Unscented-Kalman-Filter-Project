@@ -21,7 +21,7 @@ Feature: Prediction
       """
     When I call Prediction with 0.1
     Then AugmentedSigmaPoints should be called
-    And Xsig_aug with accuracy 0.0001 should be
+    And matrix Xsig_aug with accuracy 0.0001 should be
       """
       5.7441  5.85768   5.7441   5.7441   5.7441   5.7441   5.7441   5.7441   5.63052   5.7441   5.7441   5.7441   5.7441   5.7441   5.7441
       1.38  1.34566  1.52806     1.38     1.38     1.38     1.38     1.38   1.41434  1.23194     1.38     1.38     1.38     1.38     1.38

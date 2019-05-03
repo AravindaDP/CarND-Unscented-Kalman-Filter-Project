@@ -54,7 +54,7 @@ endif()
 enable_testing()
 
 # Now simply link against gtest or gtest_main as needed. Eg
-add_executable(UnscentedKFTests src/tools.cpp)
+add_executable(UnscentedKFTests src/tools.cpp src/ukf.cpp test/tools_test.cpp test/ukf_test.cpp)
 target_link_libraries(UnscentedKFTests gmock_main)
 add_test(NAME ukf_tests COMMAND UnscentedKFTests)
 
@@ -63,5 +63,6 @@ set(Boost_USE_STATIC_LIBS OFF)
 set(Boost_USE_MULTITHREADED ON)
 set(Boost_USE_STATIC_RUNTIME OFF)
 find_package(Boost 1.45.0 COMPONENTS thread system regex date_time program_options filesystem)
-add_executable(UnscentedKFSteps src/tools.cpp features/step_definitions/tools_steps.cpp)
-target_link_libraries(UnscentedKFSteps cucumber-cpp gtest ${Boost_LIBRARIES})
+add_executable(UnscentedKFSteps src/tools.cpp src/ukf.cpp features/step_definitions/helpers.cpp 
+               features/step_definitions/tools_steps.cpp features/step_definitions/ukf_steps.cpp)
+target_link_libraries(UnscentedKFSteps cucumber-cpp gmock_main ${Boost_LIBRARIES})

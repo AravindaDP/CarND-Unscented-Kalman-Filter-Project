@@ -13,4 +13,8 @@ VectorXd ParseVectorXd(const std::string& vector_str);
 
 std::vector<VectorXd> ParseVectorOfVectorXd(const std::string& input);
 
+MatrixXd ParseMatrixXd(const std::string& input);
+
+void ParseMeasurement(const std::string& line, MeasurementPackage& meas_package, VectorXd* gt);
+
 #endif  // HELPERS_H_

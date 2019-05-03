@@ -16,6 +16,7 @@ using ::testing::_;
 using ::testing::SetArgPointee;
 using ::testing::DoAll;
 using ::testing::SaveArgPointee;
+using ::testing::SaveArg;
 
 MATCHER_P(IsLt, n, "") { return ((arg-n).array() < 0).any(); }
 
@@ -28,6 +29,8 @@ struct UKFCtx {
   Tools tools_;
   MockUKF ukf_;
   MeasurementPackage meas_package;
+  MeasurementPackage meas_package_arg;
+  double delta_t;
   std::map<std::string, MatrixXd> matrix_vars;
   std::map<std::string, VectorXd> vectors;
   std::vector<std::string> ukf_calls;
@@ -37,11 +40,15 @@ struct UKFCtx {
 
   UKFCtx() {
     ON_CALL(ukf_, AugmentedSigmaPoints(_))
-        .WillByDefault(DoAll(Record(&ukf_calls, "AugmentedSigmaPoints"), Invoke(&ukf_, &MockUKF::UKFAugmentedSigmaPoints), SaveArgPointee<0>(&(matrix_vars["Xsig_aug"]))));
+        .WillByDefault(DoAll(Record(&ukf_calls, "AugmentedSigmaPoints"), 
+                             Invoke(&ukf_, &MockUKF::UKFAugmentedSigmaPoints), 
+                             SaveArgPointee<0>(&(matrix_vars["Xsig_aug"]))));
     ON_CALL(ukf_, PredictMeanAndCovariance(_, _))
-        .WillByDefault(DoAll(Record(&ukf_calls, "PredictMeanAndCovariance"), Invoke(&ukf_, &MockUKF::UKFPredictMeanAndCovariance)));
+        .WillByDefault(DoAll(Record(&ukf_calls, "PredictMeanAndCovariance"), 
+                             Invoke(&ukf_, &MockUKF::UKFPredictMeanAndCovariance)));
     ON_CALL(ukf_, PredictRadarMeasurement(_, _, _))
-        .WillByDefault(DoAll(Record(&ukf_calls, "PredictRadarMeasurement"), Invoke(&ukf_, &MockUKF::UKFPredictRadarMeasurement)));
+        .WillByDefault(DoAll(Record(&ukf_calls, "PredictRadarMeasurement"), 
+                             Invoke(&ukf_, &MockUKF::UKFPredictRadarMeasurement)));
 
     int n_aug = 7;
     int n_z = 3;
@@ -58,6 +65,7 @@ struct UKFCtx {
     *S_out = matrix_vars["S"];
   }
 };
+
 
 GIVEN("^a new UKF$") {
   ScenarioScope<UKFCtx> context;
@@ -93,6 +101,7 @@ THEN("^Xsig_pred_ should be of size 5 by 15$") {
   ASSERT_EQ(context->ukf_.Xsig_pred_.rows(), 5);
   ASSERT_EQ(context->ukf_.Xsig_pred_.cols(), 15);
 }
+
 
 WHEN("^I run UnscentedKF$") {
   ScenarioScope<UKFCtx> context;
@@ -250,14 +259,6 @@ THEN("^(.+) should be called$", (const std::string expected_call)) {
 }
 
 
-THEN("^Xsig_aug with accuracy (.*) should be$", (const double accuracy,
-                                                 const std::string Xsig_aug_str)) {
-  MatrixXd expected_Xsig_aug = ParseMatrixXd(Xsig_aug_str);
-  ScenarioScope<UKFCtx> context;
-  EXPECT_TRUE(context->matrix_vars["Xsig_aug"].isApprox(expected_Xsig_aug, accuracy));
-}
-
-
 THEN("^Xsig_pred_ with accuracy (.*) should be$", (const double accuracy,
                                                    const std::string Xsig_pred_str)) {
   MatrixXd expected_Xsig_pred = ParseMatrixXd(Xsig_pred_str);
@@ -266,7 +267,7 @@ THEN("^Xsig_pred_ with accuracy (.*) should be$", (const double accuracy,
 }
 
 
-GIVEN("^a measurement$", (const std::string line)) {
+GIVEN("^an?o?t?h?e?r? measurement$", (const std::string line)) {
   ScenarioScope<UKFCtx> context;
   VectorXd gt_values(4);
   ParseMeasurement(line, context->meas_package, &gt_values);
@@ -274,6 +275,12 @@ GIVEN("^a measurement$", (const std::string line)) {
 
 
 WHEN("^I call ProcessMeasurement$") {
+  ScenarioScope<UKFCtx> context;
+  context->ukf_.ProcessMeasurement(context->meas_package);
+}
+
+
+GIVEN("^I called ProcessMeasurement$") {
   ScenarioScope<UKFCtx> context;
   context->ukf_.ProcessMeasurement(context->meas_package);
 }
@@ -295,23 +302,19 @@ THEN("^P_ with accuracy (.*) should be$", (const double accuracy,
 }
 
 
-GIVEN("^It would return Zsig as$", (const std::string Zsig_str)) {
-  MatrixXd Zsig = ParseMatrixXd(Zsig_str);
+GIVEN("^It would return matrix (.+) as$", (const std::string variable, 
+                                           const std::string value)) {
+  MatrixXd return_val = ParseMatrixXd(value);
   ScenarioScope<UKFCtx> context;
-  context->matrix_vars["Zsig"] = Zsig;
+  context->matrix_vars[variable] = return_val;
 }
 
 
-GIVEN("^It would return z_pred as$", (const std::string z_pred_str)) {
-  VectorXd z_pred = ParseVectorXd(z_pred_str);
+GIVEN("^It would return vector (.+) as$", (const std::string variable, 
+                                           const std::string value)) {
+  VectorXd return_val = ParseVectorXd(value);
   ScenarioScope<UKFCtx> context;
-  context->vectors["z_pred"] = z_pred;
-}
-
-GIVEN("^It would return S as$", (const std::string S_str)) {
-  MatrixXd S = ParseMatrixXd(S_str);
-  ScenarioScope<UKFCtx> context;
-  context->matrix_vars["S"] = S;
+  context->vectors[variable] = return_val;
 }
 
 
@@ -322,10 +325,58 @@ GIVEN("^PredictRadarMeasurement would get called$") {
 }
 
 
+GIVEN("^Prediction would get called$") {
+  ScenarioScope<UKFCtx> context;
+  EXPECT_CALL(context->ukf_, Prediction(_))
+      .WillOnce(DoAll(Record(&(context->ukf_calls), "Prediction"),
+                      SaveArg<0>(&(context->delta_t)), 
+                      Invoke(&(context->ukf_), &MockUKF::UKFPrediction)));
+  //Reroute Inner calls without logging;
+  EXPECT_CALL(context->ukf_, AugmentedSigmaPoints(_))
+      .WillOnce(Invoke(&(context->ukf_), &MockUKF::UKFAugmentedSigmaPoints));
+  EXPECT_CALL(context->ukf_, PredictMeanAndCovariance(_, _))
+      .WillOnce(Invoke(&(context->ukf_), &MockUKF::UKFPredictMeanAndCovariance));  
+}
+
+
+THEN("^It should have received delta_t as (.*)$", (const double expected_delta_t)) {
+  ScenarioScope<UKFCtx> context;
+  ASSERT_EQ(context->delta_t, expected_delta_t);
+}
+
+
+GIVEN("^UpdateLidar would get called$") {
+  ScenarioScope<UKFCtx> context;
+  EXPECT_CALL(context->ukf_, UpdateLidar(_))
+      .WillOnce(DoAll(Record(&(context->ukf_calls), "UpdateLidar"),
+                      SaveArg<0>(&(context->meas_package_arg)), 
+                      Invoke(&(context->ukf_), &MockUKF::UKFUpdateLidar)));
+}
+
+
+THEN("^It should have received measurement in$", (const std::string measurement_str)) {
+  MeasurementPackage expected_measurement;
+  VectorXd gt_values(4);
+  ParseMeasurement(measurement_str, expected_measurement, &gt_values);
+  ScenarioScope<UKFCtx> context;
+  ASSERT_EQ(context->meas_package_arg, expected_measurement);
+}
+
+
+GIVEN("^UpdateRadar would get called$") {
+  ScenarioScope<UKFCtx> context;
+  EXPECT_CALL(context->ukf_, UpdateRadar(_))
+      .WillOnce(DoAll(Record(&(context->ukf_calls), "UpdateRadar"),
+                      SaveArg<0>(&(context->meas_package_arg)), 
+                      Invoke(&(context->ukf_), &MockUKF::UKFUpdateRadar)));
+}
+
+
 WHEN("^I call UpdateRadar$") {
   ScenarioScope<UKFCtx> context;
   context->ukf_.UpdateRadar(context->meas_package);
 }
+
 
 GIVEN("^Dataset 1 is used$") {
   ScenarioScope<UKFCtx> context;
@@ -344,4 +395,3 @@ GIVEN("^Dataset 1 is used$") {
     in_file_.close();
   }
 }
-

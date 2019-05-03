@@ -32,8 +32,8 @@ MatrixXd ParseMatrixXd(const std::string& input){
   return eMatrix;
 }
 
-void ParseMeasurement(const std::string& line, MeasurementPackage& meas_package, VectorXd* gt){
-  std::cout << line << std::endl;
+void ParseMeasurement(const std::string& line, MeasurementPackage& meas_package, 
+                      VectorXd* gt){
   std::string sensor_type;
   VectorXd gt_values(4);
   std::istringstream iss(line);

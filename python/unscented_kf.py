@@ -7,6 +7,7 @@ from ukf.matrix import Matrix
 from ukf.measurement_package import MeasurementPackage
 from ukf.ukf import UKF
 from ukf.tools import Tools
+from math import sin, cos
 
 sio = socketio.Server()
 app = Flask(__name__)
@@ -69,8 +70,11 @@ def telemetry(sid, data):
 
         p_x = ukf._x.value[0][0]
         p_y = ukf._x.value[1][0]
-        v1  = ukf._x.value[2][0]
-        v2 = ukf._x.value[3][0]
+        v  = ukf._x.value[2][0]
+        yaw = ukf._x.value[3][0]
+
+        v1 = cos(yaw)*v
+        v2 = sin(yaw)*v
 
         estimate = Matrix([[p_x], [p_y], [v1], [v2]])
 

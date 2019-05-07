@@ -15,6 +15,7 @@ struct ToolsCtx {
   std::vector<VectorXd> ground_truth;
 };
 
+
 GIVEN("^estimations length is 0$") {
   ScenarioScope<ToolsCtx> context;
   context->estimations.clear();

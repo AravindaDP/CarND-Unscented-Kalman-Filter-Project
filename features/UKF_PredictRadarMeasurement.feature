@@ -20,7 +20,7 @@ Feature: Predict Radar Measurement
     When I call PredictRadarMeasurement
     Then vector z_pred with accuracy 0.00005 should be
       """
-      6.12155, 0.245993, 2.10313
+      6.12155 0.245993 2.10313
       """
     And matrix S with accuracy 0.0000005 should be
       """

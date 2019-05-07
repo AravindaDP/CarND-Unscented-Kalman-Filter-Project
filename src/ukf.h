@@ -27,20 +27,29 @@ class UKF {
    * matrix
    * @param delta_t Time between k and k+1 in s
    */
-  void Prediction(double delta_t);
+  virtual void Prediction(double delta_t);
 
   /**
    * Updates the state and the state covariance matrix using a laser measurement
    * @param meas_package The measurement at k+1
    */
-  void UpdateLidar(MeasurementPackage meas_package);
+  virtual void UpdateLidar(MeasurementPackage meas_package);
 
   /**
    * Updates the state and the state covariance matrix using a radar measurement
    * @param meas_package The measurement at k+1
    */
-  void UpdateRadar(MeasurementPackage meas_package);
+  virtual void UpdateRadar(MeasurementPackage meas_package);
 
+  /**
+   * Student assignment functions
+   */
+  virtual void AugmentedSigmaPoints(Eigen::MatrixXd* Xsig_out);
+  virtual void PredictMeanAndCovariance(Eigen::VectorXd* x_pred,
+                                        Eigen::MatrixXd* P_pred);
+  virtual void PredictRadarMeasurement(Eigen::MatrixXd* Zsig_out,
+                                       Eigen::VectorXd* z_out,
+                                       Eigen::MatrixXd* S_out);
 
   // initially set to false, set to true in first call of ProcessMeasurement
   bool is_initialized_;

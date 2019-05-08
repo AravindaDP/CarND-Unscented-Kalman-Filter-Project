@@ -27,20 +27,29 @@ class UKF {
    * matrix
    * @param delta_t Time between k and k+1 in s
    */
-  void Prediction(double delta_t);
+  virtual void Prediction(double delta_t);
 
   /**
    * Updates the state and the state covariance matrix using a laser measurement
    * @param meas_package The measurement at k+1
    */
-  void UpdateLidar(MeasurementPackage meas_package);
+  virtual void UpdateLidar(MeasurementPackage meas_package);
 
   /**
    * Updates the state and the state covariance matrix using a radar measurement
    * @param meas_package The measurement at k+1
    */
-  void UpdateRadar(MeasurementPackage meas_package);
+  virtual void UpdateRadar(MeasurementPackage meas_package);
 
+  /**
+   * Student assignment functions
+   */
+  virtual void AugmentedSigmaPoints(Eigen::MatrixXd* Xsig_out);
+  virtual void PredictMeanAndCovariance(Eigen::VectorXd* x_pred,
+                                        Eigen::MatrixXd* P_pred);
+  virtual void PredictRadarMeasurement(Eigen::MatrixXd* Zsig_out,
+                                       Eigen::VectorXd* z_out,
+                                       Eigen::MatrixXd* S_out);
 
   // initially set to false, set to true in first call of ProcessMeasurement
   bool is_initialized_;
@@ -59,6 +68,15 @@ class UKF {
 
   // predicted sigma points matrix
   Eigen::MatrixXd Xsig_pred_;
+
+  Eigen::MatrixXd Xsig_diff_;
+
+  // Lidar measurement covariance
+  Eigen::MatrixXd R_;
+
+  // Lidar measurement matrix
+  Eigen::MatrixXd H_;
+  Eigen::MatrixXd Ht_;
 
   // time when the state is true, in us
   long long time_us_;
@@ -95,6 +113,11 @@ class UKF {
 
   // Sigma point spreading parameter
   double lambda_;
+
+  double lambda_sqrt_;
+
+  double lidar_nis_;
+  double radar_nis_;
 };
 
 #endif  // UKF_H

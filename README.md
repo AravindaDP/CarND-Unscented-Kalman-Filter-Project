@@ -15,6 +15,14 @@ Once the install for uWebSocketIO is complete, the main program can be built and
 4. make
 5. ./UnscentedKF
 
+### Important:
+```
+In addition to udacity provided CMake build targets, a GoogleTest and GoogleMocks 
+based unit test configuration is also added. For this CMakeLists.txt is modified 
+to download GoogleTest as part of the build's configure step. So please make sure 
+that you have internet connectivity during cmake step above.
+```
+
 Tips for setting up your environment can be found in the classroom lesson for the EKF project.
 
 Note that the programs that need to be written to accomplish the project are src/ukf.cpp, src/ukf.h, tools.cpp, and tools.h
@@ -51,6 +59,10 @@ OUTPUT: values provided by the c++ program to the simulator
   * Linux: gcc / g++ is installed by default on most Linux distros
   * Mac: same deal as make - [install Xcode command line tools](https://developer.apple.com/xcode/features/)
   * Windows: recommend using [MinGW](http://www.mingw.org/)
+* python2.7 and matplotlib
+  * Linux/Windows: Ideally you should have these installed if you had already installed [CarND Term1 Starter Kit](https://github.com/udacity/CarND-Term1-Starter-Kit)
+* cucumber and cucumber-cpp (Optional)
+  * Linux/Windows: Please refer to [this document](install_cucumber.md) for installation instructions.
 
 ## Basic Build Instructions
 
@@ -58,6 +70,37 @@ OUTPUT: values provided by the c++ program to the simulator
 2. Make a build directory: `mkdir build && cd build`
 3. Compile: `cmake .. && make`
 4. Run it: `./UnscentedKF`
+
+## Running Unit Tests
+
+A unit test suite is also compiled as part of above build step. You can simply run it with following command from build directory
+
+`./UnscentedKFTests`
+
+## Running Behavior-driven Scenario Specifications (Linux and Windows Only)
+
+A cucumber-cpp based behaviour-driven feature test suite is also included with this. These are however not built by default and must be manually enabled from cmake with following commands from build directory. (You'll need to install additional dependancies with `install-cucumber-ubuntu.sh`. This is currently only supported on Linux and Windows using Ubuntu on WSL)
+
+1. Run CMAKE with additional argument: `cmake -DUKF_ENABLE_CUKE=on ..`
+2. Compile: `make`
+
+Then you can simply run bdd feature-tests with following command from build directory
+
+`./UnscentedKFSteps >/dev/null & cucumber ..`
+
+## Supported command line arguments
+
+Following command line arguments are supported by UnscentedKF.
+
+```
+usage: ./UnscentedKF [--twiddle|--lidar-only|--radar-only]
+  options:
+    --twiddle     Twiddle parameter tuning
+    --lidar-only  Use Lidar only for measurement updates
+    --radar-only  Use Radar only for measurement updates
+```
+
+Please note that you can specify only one of these arguments at once.
 
 ## Editor Settings
 
@@ -85,6 +128,10 @@ Matlab scripts that can generate additional data.
 This information is only accessible by people who are already enrolled in Term 2
 of CarND. If you are enrolled, see the project page in the classroom
 for instructions and the project rubric.
+
+## Python Version of ExtendedKF
+
+* Python version of this project is available under /python directory. Please refer to [/python/README.md](python/README.md) for more details on using python version of the project.
 
 ## How to write a README
 A well written README file can enhance your project and portfolio.  Develop your abilities to create professional README files by completing [this free course](https://www.udacity.com/course/writing-readmes--ud777).

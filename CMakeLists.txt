@@ -4,6 +4,8 @@ cmake_minimum_required (VERSION 3.5)
 
 add_definitions(-std=c++11)
 
+set(UKF_ENABLE_CUKE OFF CACHE BOOL "Enable Cucumber Tests")
+
 set(CXX_FLAGS "-Wall")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CXX_FLAGS}")
 set(sources src/ukf.cpp src/main.cpp src/tools.cpp)
@@ -62,11 +64,13 @@ add_executable(UnscentedKFTests src/tools.cpp src/ukf.cpp test/tools_test.cpp te
 target_link_libraries(UnscentedKFTests gmock_main)
 add_test(NAME ukf_tests COMMAND UnscentedKFTests)
 
-include_directories(/include)
-set(Boost_USE_STATIC_LIBS OFF)
-set(Boost_USE_MULTITHREADED ON)
-set(Boost_USE_STATIC_RUNTIME OFF)
-find_package(Boost 1.45.0 COMPONENTS thread system regex date_time program_options filesystem)
-add_executable(UnscentedKFSteps src/tools.cpp src/ukf.cpp features/step_definitions/helpers.cpp 
-               features/step_definitions/tools_steps.cpp features/step_definitions/ukf_steps.cpp)
-target_link_libraries(UnscentedKFSteps cucumber-cpp gmock_main ${Boost_LIBRARIES})
+if (UKF_ENABLE_CUKE)
+  include_directories(/include)
+  set(Boost_USE_STATIC_LIBS OFF)
+  set(Boost_USE_MULTITHREADED ON)
+  set(Boost_USE_STATIC_RUNTIME OFF)
+  find_package(Boost 1.45.0 COMPONENTS thread system regex date_time program_options filesystem)
+  add_executable(UnscentedKFSteps src/tools.cpp src/ukf.cpp features/step_definitions/helpers.cpp 
+                 features/step_definitions/tools_steps.cpp features/step_definitions/ukf_steps.cpp)
+  target_link_libraries(UnscentedKFSteps cucumber-cpp gmock_main ${Boost_LIBRARIES})
+endif()

@@ -154,10 +154,12 @@ class UKF:
         delta_t = (meas_package._timestamp - self._time_us)/1000000.0
         self.prediction(delta_t)
 
-        if meas_package._sensor_type == MeasurementPackage.SensorType.LASER:
+        if ((meas_package._sensor_type == MeasurementPackage.SensorType.LASER)
+            and self._use_laser):
             self.update_lidar(meas_package)
 
-        elif meas_package._sensor_type == MeasurementPackage.SensorType.RADAR:
+        elif ((meas_package._sensor_type == MeasurementPackage.SensorType.RADAR)
+              and self._use_radar):
             self.update_radar(meas_package)
 
         self._time_us = meas_package._timestamp

@@ -191,6 +191,12 @@ vector<double> twiddle(double tol=0.02){
 }
 
 int main(int argc, char *argv[]) {
+  std::cout << "usage: UnscentedKF [--twiddle|--lidar-only|--radar-only]" << std::endl;
+  std::cout << "  options:" << std::endl;
+  std::cout << "    --twiddle     Twiddle parameter tuning" << std::endl;
+  std::cout << "    --lidar-only  Use Lidar only for measurement updates" << std::endl;
+  std::cout << "    --radar-only  Use Radar only for measurement updates" << std::endl;
+
   if(argc > 1){
     if(strcmp(argv[1], "--twiddle") == 0){
       vector<double> best_params = twiddle();
@@ -203,6 +209,17 @@ int main(int argc, char *argv[]) {
 
   // Create a Kalman Filter instance
   UKF ukf;
+
+  if(argc > 1){
+    for(int i = 1; i<argc; i++){
+      if(strcmp(argv[i], "--lidar-only") == 0){
+        ukf.use_radar_ = false;
+      }
+      if(strcmp(argv[i], "--radar-only") == 0){
+        ukf.use_laser_ = false;
+      }
+    }
+  }
 
   // used to compute the RMSE later
   Tools tools;
@@ -264,9 +281,9 @@ int main(int argc, char *argv[]) {
           estimate(3) = v2;
         
           estimations.push_back(estimate);
-          if (sensor_type.compare("L") == 0)
+          if ((sensor_type.compare("L") == 0) && ukf.use_laser_)
             lidar_nis.push_back(ukf.lidar_nis_);
-          if (sensor_type.compare("R") == 0)
+          if ((sensor_type.compare("R") == 0) && ukf.use_radar_)
             radar_nis.push_back(ukf.radar_nis_);
 
           VectorXd RMSE = tools.CalculateRMSE(estimations, ground_truth);

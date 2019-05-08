@@ -177,9 +177,9 @@ def telemetry(sid, data):
         estimate = Matrix([[p_x], [p_y], [v1], [v2]])
 
         estimations.append(estimate)
-        if(sensor_type == "L"):
+        if(sensor_type == "L") and ukf._use_laser:
             lidar_nis.append(ukf._lidar_nis)
-        elif(sensor_type == "R"):
+        elif(sensor_type == "R") and ukf._use_radar:
             radar_nis.append(ukf._radar_nis)
 
         rmse = tools.calculate_rmse(estimations, ground_truth)
@@ -231,9 +231,20 @@ def disconnect(sid):
     print("disconnected")
 
 if __name__ == '__main__':
+    print("usage: unscented_kf.py [--twiddle|--lidar-only|--radar-only]")
+    print("  options:")
+    print("    --twiddle     Twiddle parameter tuning")
+    print("    --lidar-only  Use Lidar only for measurement updates")
+    print("    --radar-only  Use Radar only for measurement updates")
     if "--twiddle" in sys.argv:
         print("Final parameters: {}".format(twiddle()))
         sys.exit(0)
+
+    if "--lidar-only" in sys.argv:
+        ukf._use_radar = False
+    elif "--radar-only" in sys.argv:
+        ukf._use_laser = False
+
     # wrap Flask application with engineio's middleware
     app = socketio.Middleware(sio, app)
 

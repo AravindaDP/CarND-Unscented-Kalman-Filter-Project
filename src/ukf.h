@@ -69,6 +69,15 @@ class UKF {
   // predicted sigma points matrix
   Eigen::MatrixXd Xsig_pred_;
 
+  Eigen::MatrixXd Xsig_diff_;
+
+  // Lidar measurement covariance
+  Eigen::MatrixXd R_;
+
+  // Lidar measurement matrix
+  Eigen::MatrixXd H_;
+  Eigen::MatrixXd Ht_;
+
   // time when the state is true, in us
   long long time_us_;
 
@@ -104,6 +113,8 @@ class UKF {
 
   // Sigma point spreading parameter
   double lambda_;
+
+  double lambda_sqrt_;
 };
 
 #endif  // UKF_H

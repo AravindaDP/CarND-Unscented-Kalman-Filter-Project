@@ -1,6 +1,6 @@
 from ukf.matrix import Matrix
 from ukf.measurement_package import MeasurementPackage
-from math import sqrt, sin, cos, pi, atan2
+from math import sqrt, sin, cos, pi, atan2, fmod
 
 class UKF:
     def __init__(self):
@@ -25,6 +25,8 @@ class UKF:
 
         # Sigma point spreading parameter
         self._lambda = 3 - self._n_aug
+
+        self._lambda_sqrt = sqrt(self._lambda+self._n_aug)
 
         #if this is false, laser measurements will be ignored (except during init)
         self._use_laser = True
@@ -74,8 +76,26 @@ class UKF:
         #set vector for weights
         self._weights.zero(2*self._n_aug+1, 1)
 
+        # set weights
+        weight_0 = self._lambda/(self._lambda+self._n_aug)
+        weight = 0.5/(self._n_aug+self._lambda)
+        self._weights.value[0] = [weight_0]
+
+        for i in range(1, 2*self._n_aug+1):
+            self._weights.value[i] = [weight]
+
         #create matrix with predicted sigma points as columns
         self._Xsig_pred.zero(self._n_x, 2 * self._n_aug + 1)
+
+        # Lidar measurement covariance
+        self._R = Matrix([[self._std_laspx*self._std_laspx, 0],
+                          [0, self._std_laspy*self._std_laspy]])
+
+        # Lidar measurement matrix
+        self._H = Matrix([[1, 0, 0, 0, 0],
+                          [0, 1, 0, 0, 0]])
+
+        self._Ht = self._H.transpose()
 
     def process_measurement(self, meas_package):
         """ProcessMeasurement
@@ -112,7 +132,7 @@ class UKF:
 
                 #max(standard deviation radius, standard deviation angle*radar distance)
                 #a crude estimation of maximum standard deviation in cartesian coordinates
-                std_rad = max(self._std_radr, self._std_radphi*ro); #max()
+                std_rad = max(self._std_radr, self._std_radphi*ro)
                 self._P = Matrix([[std_rad*std_rad, 0, 0, 0, 0],
                                   [0, std_rad*std_rad, 0, 0, 0],
                                   [0, 0, 9, 0, 0],
@@ -163,6 +183,9 @@ class UKF:
 
         #Lesson 7, section 21: Sigma Point Prediction Assignment 2
 
+        # may be it's very little gain. but to avoid couple of arithmatic operations
+        delta_t_2 = delta_t*delta_t
+
         # predict sigma points
         for i in range(2*self._n_aug+1):
             #extract values for better readability
@@ -187,11 +210,11 @@ class UKF:
             yawd_p = yawd
 
             # add noise
-            px_p = px_p + 0.5*nu_a*delta_t*delta_t * cos(yaw)
-            py_p = py_p + 0.5*nu_a*delta_t*delta_t * sin(yaw)
+            px_p = px_p + 0.5*nu_a*delta_t_2 * cos(yaw)
+            py_p = py_p + 0.5*nu_a*delta_t_2 * sin(yaw)
             v_p = v_p + nu_a*delta_t
 
-            yaw_p = yaw_p + 0.5*nu_yawdd*delta_t*delta_t
+            yaw_p = yaw_p + 0.5*nu_yawdd*delta_t_2
             yawd_p = yawd_p + nu_yawdd*delta_t
 
             # write predicted sigma point into right column
@@ -226,20 +249,12 @@ class UKF:
         # The mapping from state space to Lidar is linear. Fill this out with
         # appropriate update steps
 
-        # measurement covariance
-        R = Matrix([[self._std_laspx*self._std_laspx, 0],
-                    [0, self._std_laspy*self._std_laspy]])
-
-        # measurement matrix
-        H = Matrix([[1, 0, 0, 0, 0],
-                    [0, 1, 0, 0, 0]])
-
-        z_pred = H * self._x
+        z_pred = self._H * self._x
         y = meas_package._raw_measurements - z_pred
-        Ht = H.transpose()
-        S = H * self._P * Ht + R
+        #Ht = H.transpose()
+        S = self._H * self._P * self._Ht + self._R
         Si = S.inverse()
-        PHt = self._P * Ht
+        PHt = self._P * self._Ht
         K = PHt * Si
 
         # new estimate
@@ -247,7 +262,7 @@ class UKF:
         x_size = self._x.dimx
         I = Matrix([[]])
         I.identity(x_size)
-        self._P = (I - K * H) * self._P
+        self._P = (I - K * self._H) * self._P
 
     def update_radar(self, meas_package):
         """Updates the state and the state covariance matrix using a radar measurement
@@ -276,14 +291,6 @@ class UKF:
 
         #Lesson 7, section 30: UKF Update Assignment 2
 
-        # set vector for weights
-        weight_0 = self._lambda/(self._lambda+self._n_aug)
-        weight = 0.5/(self._lambda+self._n_aug)
-        self._weights.value[0][0] = weight_0
-
-        for i in range(1,2*self._n_aug+1):
-            self._weights.value[i][0] = weight
-
         # create matrix for cross correlation Tc
         Tc = Matrix([[]])
 
@@ -297,10 +304,7 @@ class UKF:
                 z_diff.value[row][0] = Zsig.value[row][i]
             z_diff = z_diff - z_pred
             # angle normalization
-            while (z_diff.value[1][0] > pi):
-                z_diff.value[1][0] -=2.*pi
-            while (z_diff.value[1][0] < -pi):
-                z_diff.value[1][0] +=2.*pi
+            z_diff.value[1][0] = fmod(z_diff.value[1][0], pi)
 
             # state difference
             x_diff = Matrix([[]])
@@ -309,13 +313,11 @@ class UKF:
                 x_diff.value[row][0] = self._Xsig_pred.value[row][i]
             x_diff = x_diff - self._x
             # angle normalization
-            while x_diff.value[3][0] > pi:
-                x_diff.value[3][0] -= 2.0*pi
-            while x_diff.value[3][0] < -pi:
-                x_diff.value[3][0] += 2.0*pi
+            x_diff.value[3][0] = fmod(x_diff.value[3][0], pi)
 
             x_diff_z_diff_t = x_diff * z_diff.transpose()
-            x_diff_z_diff_t.value = [[xzv*self._weights.value[i][0] for xzv in row] for row in x_diff_z_diff_t.value]
+            x_diff_z_diff_t.value = [[xzv*self._weights.value[i][0] for xzv in row]
+                                     for row in x_diff_z_diff_t.value]
             Tc = Tc + x_diff_z_diff_t
 
         # Kalman gain K;
@@ -325,10 +327,7 @@ class UKF:
         z_diff = meas_package._raw_measurements - z_pred
 
         # angle normalization
-        while (z_diff.value[1][0] > pi):
-            z_diff.value[1][0] -=2.*pi
-        while (z_diff.value[1][0] < -pi):
-            z_diff.value[1][0] +=2.*pi
+        z_diff.value[1][0] = fmod(z_diff.value[1][0], pi)
 
         #update state mean and covariance matrix
         self._x = self._x + K * z_diff
@@ -370,9 +369,9 @@ class UKF:
         for i in range(self._n_aug):
             for row in range(len(x_aug.value)):
                 Xsig_aug.value[row][i+1] = (x_aug.value[row][0]
-                                            + sqrt(self._lambda+self._n_aug)*L.value[row][i])
+                                            + self._lambda_sqrt*L.value[row][i]) #+ sqrt(self._lambda+self._n_aug)*L.value[row][i])
                 Xsig_aug.value[row][i+1+self._n_aug] = (x_aug.value[row][0]
-                                                        - sqrt(self._lambda+self._n_aug)*L.value[row][i])
+                                                        - self._lambda_sqrt*L.value[row][i]) #- sqrt(self._lambda+self._n_aug)*L.value[row][i])
 
         return Xsig_aug
 
@@ -385,19 +384,12 @@ class UKF:
         # create covariance matrix for prediction
         P = Matrix([[]])
 
-        # set weights
-        weight_0 = self._lambda/(self._lambda+self._n_aug)
-        self._weights.value[0][0] = weight_0
-        for i in range(1,2*self._n_aug+1):  #2n+1 weights
-            weight = 0.5/(self._n_aug+self._lambda)
-            self._weights.value[i][0] = weight
-
         # predicted state mean
         x.zero(self._n_x,1)
         for i in range(2*self._n_aug+1):  # iterate over sigma points
             for row in range(x.dimx):
-                x.value[row][0] = (x.value[row][0]
-                                   + self._weights.value[i][0]*self._Xsig_pred.value[row][i])
+                x.value[row] = [x.value[row][0]
+                                + self._weights.value[i][0]*self._Xsig_pred.value[row][i]]
 
         # predicted state covariance matrix
         P.zero(self._n_x, self._n_x)
@@ -409,13 +401,11 @@ class UKF:
                 x_diff.value[row][0] = self._Xsig_pred.value[row][i]
             x_diff = x_diff - x
             # angle normalization
-            while x_diff.value[3][0] > pi:
-                x_diff.value[3][0] -= 2.0*pi
-            while x_diff.value[3][0] < -pi:
-                x_diff.value[3][0] += 2.0*pi
+            x_diff.value[3][0] = fmod(x_diff.value[3][0], pi)
 
             x_diff2 = x_diff * x_diff.transpose()
-            x_diff2.value = [[xv*self._weights.value[i][0] for xv in row] for row in x_diff2.value]
+            x_diff2.value = [[xv*self._weights.value[i][0] for xv in row] 
+                             for row in x_diff2.value]
             P = P + x_diff2
 
         return (x, P)
@@ -425,14 +415,6 @@ class UKF:
 
         # set measurement dimension, radar can measure r, phi, and r_dot
         n_z = 3
-
-        # set vector for weights
-        weight_0 = self._lambda/(self._lambda+self._n_aug)
-        weight = 0.5/(self._lambda+self._n_aug)
-        self._weights.value[0][0] = weight_0
-
-        for i in range(1,2*self._n_aug+1):
-            self._weights.value[i][0] = weight
 
         # create matrix for sigma points in measurement space
         Zsig = Matrix([[]])
@@ -459,14 +441,14 @@ class UKF:
             # measurement model
             Zsig.value[0][i] = sqrt(p_x*p_x + p_y*p_y)                       # r
             Zsig.value[1][i] = atan2(p_y,p_x)                                # phi
-            Zsig.value[2][i] = (p_x*v1 + p_y*v2) / sqrt(p_x*p_x + p_y*p_y)   # r_dot
+            Zsig.value[2][i] = (p_x*v1 + p_y*v2) / Zsig.value[0][i] #sqrt(p_x*p_x + p_y*p_y)   # r_dot
 
         # mean predicted measurement
         z_pred.zero(n_z,1)
         for i in range(2 * self._n_aug + 1):
             for row in range(n_z):
-                z_pred.value[row][0] = (z_pred.value[row][0]
-                                        + self._weights.value[i][0] * Zsig.value[row][i])
+                z_pred.value[row] = [z_pred.value[row][0]
+                                     + self._weights.value[i][0] * Zsig.value[row][i]]
 
         # innovation covariance matrix S
         S.zero(n_z,n_z)
@@ -479,13 +461,11 @@ class UKF:
             z_diff = z_diff - z_pred
 
             # angle normalization
-            while (z_diff.value[1][0] > pi):
-                z_diff.value[1][0] -=2.*pi
-            while (z_diff.value[1][0] < -pi):
-                z_diff.value[1][0] +=2.*pi
+            z_diff.value[1][0] = fmod(z_diff.value[1][0], pi)
 
             z_diff2 = z_diff * z_diff.transpose()
-            z_diff2.value = [[zv*self._weights.value[i][0] for zv in row] for row in z_diff2.value]
+            z_diff2.value = [[zv*self._weights.value[i][0] for zv in row]
+                             for row in z_diff2.value]
             S = S + z_diff2
 
         # add measurement noise covariance matrix

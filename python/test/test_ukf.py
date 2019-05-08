@@ -59,7 +59,7 @@ class TestUKF(unittest.TestCase):
 
         self.assertEqual(self._ukf._x.value, initial_x.value)
 
-        std_rad = max(self._ukf._std_radr, self._ukf._std_radphi*ro)
+        std_rad = max(self._ukf._std_radr, self._ukf._std_radphi*ro)*2
         initial_P = Matrix([[std_rad*std_rad, 0, 0, 0, 0],
                             [0, std_rad*std_rad, 0, 0, 0],
                             [0, 0, 9, 0, 0],

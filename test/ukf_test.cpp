@@ -80,7 +80,7 @@ TEST_F(UKFTest, ProcessMeasurement_SetsXAndP_IfFirstMeasurementIsRADAR) {
   ASSERT_TRUE(ukf_.x_.isApprox(initial_x));
 
   MatrixXd initial_P = MatrixXd(5, 5);
-  double std_rad = std::max(ukf_.std_radr_, ukf_.std_radphi_*ro);
+  double std_rad = std::max(ukf_.std_radr_, ukf_.std_radphi_*ro)*2;
   initial_P << std_rad*std_rad, 0, 0, 0, 0,
                0, std_rad*std_rad, 0, 0, 0,
                0, 0, 9, 0, 0,

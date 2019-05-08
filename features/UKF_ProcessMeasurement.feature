@@ -36,8 +36,8 @@ Feature: Process Measurement
       """
     And P_ with accuracy 0.00000001 should be
       """
-      0.09 0 0 0 0
-      0 0.09 0 0 0
+      0.36 0 0 0 0
+      0 0.36 0 0 0
       0 0 9 0 0
       0 0 0 2.25 0
       0 0 0 0 0.0625

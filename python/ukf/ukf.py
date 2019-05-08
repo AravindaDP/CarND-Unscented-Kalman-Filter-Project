@@ -96,6 +96,9 @@ class UKF:
                           [0, 1, 0, 0, 0]])
 
         self._Ht = self._H.transpose()
+        
+        self._lidar_nis = 0
+        self._radar_nis = 0
 
     def process_measurement(self, meas_package):
         """ProcessMeasurement
@@ -264,6 +267,9 @@ class UKF:
         I.identity(x_size)
         self._P = (I - K * self._H) * self._P
 
+        nis = y.transpose()*Si*y
+        self._lidar_nis = nis.value[0][0]
+
     def update_radar(self, meas_package):
         """Updates the state and the state covariance matrix using a radar measurement
         
@@ -333,6 +339,8 @@ class UKF:
         self._x = self._x + K * z_diff
         self._P = self._P - K*S*K.transpose()
 
+        nis = z_diff.transpose()*S.inverse()*z_diff
+        self._radar_nis = nis.value[0][0]
 
     """
     Student assignment functions

@@ -115,6 +115,9 @@ class UKF {
   double lambda_;
 
   double lambda_sqrt_;
+
+  double lidar_nis_;
+  double radar_nis_;
 };
 
 #endif  // UKF_H

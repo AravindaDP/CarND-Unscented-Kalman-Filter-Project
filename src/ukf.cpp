@@ -90,6 +90,9 @@ UKF::UKF() {
 	H_ << 1, 0, 0, 0, 0,
 			  0, 1, 0, 0, 0;
   Ht_ = H_.transpose();
+
+  lidar_nis_ = 0;
+  radar_nis_ = 0;
 }
 
 UKF::~UKF() {}
@@ -258,6 +261,8 @@ void UKF::UpdateLidar(MeasurementPackage meas_package) {
   long x_size = x_.size();
   MatrixXd I = MatrixXd::Identity(x_size, x_size);
   P_ = (I - K * H_) * P_;
+
+  lidar_nis_ = y.transpose()*Si*y;
 }
 
 void UKF::UpdateRadar(MeasurementPackage meas_package) {
@@ -323,6 +328,8 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
   //update state mean and covariance matrix
   x_ = x_ + K * z_diff;
   P_ = P_ - K*S*K.transpose();
+
+  radar_nis_ = z_diff.transpose()*S.inverse()*z_diff;
 }
 
 /**

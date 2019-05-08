@@ -8,6 +8,7 @@ from ukf.measurement_package import MeasurementPackage
 from ukf.ukf import UKF
 from ukf.tools import Tools
 from math import sin, cos
+import matplotlib.pyplot as plt
 
 sio = socketio.Server()
 app = Flask(__name__)
@@ -19,6 +20,8 @@ ukf = UKF()
 tools = Tools()
 estimations = []
 ground_truth = []
+lidar_nis = []
+radar_nis = []
 
 @sio.on('telemetry')
 def telemetry(sid, data):
@@ -79,6 +82,10 @@ def telemetry(sid, data):
         estimate = Matrix([[p_x], [p_y], [v1], [v2]])
 
         estimations.append(estimate)
+        if(sensor_type == "L"):
+            lidar_nis.append(ukf._lidar_nis)
+        elif(sensor_type == "R"):
+            radar_nis.append(ukf._radar_nis)
 
         rmse = tools.calculate_rmse(estimations, ground_truth)
 
@@ -99,6 +106,34 @@ def telemetry(sid, data):
 @sio.on('connect')
 def connect(sid, environ):
     print("connect ", sid)
+
+@sio.on('disconnect')
+def disconnect(sid):
+    if len(lidar_nis) > 0:
+        plt.plot(lidar_nis, "r.")
+        for i in range(len(lidar_nis)):
+            lidar_nis[i] = 0.103
+        plt.plot(lidar_nis, "y--")
+        for i in range(len(lidar_nis)):
+            lidar_nis[i] = 5.991
+        plt.plot(lidar_nis, "y--")
+        plt.title("Lidar NIS")
+        plt.savefig("../images/lidar_nis.png")
+        plt.clf()
+        del lidar_nis[:]
+    if len(radar_nis) > 0:
+        plt.plot(radar_nis, "r.")
+        for i in range(len(radar_nis)):
+            radar_nis[i] = 0.352
+        plt.plot(radar_nis, "y--")
+        for i in range(len(radar_nis)):
+            radar_nis[i] = 7.815
+        plt.plot(radar_nis, "y--")
+        plt.title("Radar NIS")
+        plt.savefig("../images/radar_nis.png")
+        plt.clf()
+        del radar_nis[:]
+    print("disconnected")
 
 if __name__ == '__main__':
     # wrap Flask application with engineio's middleware

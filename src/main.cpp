@@ -4,6 +4,7 @@
 #include "json.hpp"
 #include "ukf.h"
 #include "tools.h"
+#include "matplotlibcpp.h"
 
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
@@ -12,6 +13,7 @@ using std::vector;
 
 // for convenience
 using json = nlohmann::json;
+namespace plt = matplotlibcpp;
 
 // Checks if the SocketIO event has JSON data.
 // If there is data the JSON object in string format will be returned,
@@ -39,8 +41,10 @@ int main() {
   Tools tools;
   vector<VectorXd> estimations;
   vector<VectorXd> ground_truth;
+  vector<double> lidar_nis;
+  vector<double> radar_nis;
 
-  h.onMessage([&ukf,&tools,&estimations,&ground_truth]
+  h.onMessage([&ukf,&tools,&estimations,&ground_truth, &lidar_nis, &radar_nis]
               (uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length, 
                uWS::OpCode opCode) {
     // "42" at the start of the message means there's a websocket message event.
@@ -129,6 +133,10 @@ int main() {
           estimate(3) = v2;
         
           estimations.push_back(estimate);
+          if (sensor_type.compare("L") == 0)
+            lidar_nis.push_back(ukf.lidar_nis_);
+          if (sensor_type.compare("R") == 0)
+            radar_nis.push_back(ukf.radar_nis_);
 
           VectorXd RMSE = tools.CalculateRMSE(estimations, ground_truth);
 
@@ -157,8 +165,37 @@ int main() {
     std::cout << "Connected!!!" << std::endl;
   });
 
-  h.onDisconnection([&h](uWS::WebSocket<uWS::SERVER> ws, int code, 
+  h.onDisconnection([&h, &lidar_nis, &radar_nis](uWS::WebSocket<uWS::SERVER> ws, int code, 
                          char *message, size_t length) {
+    if(lidar_nis.size()> 0){
+      plt::plot(lidar_nis, "r.");
+      for(int i=0; i<lidar_nis.size(); ++i) {
+        lidar_nis.at(i) = 0.103;
+      }
+      plt::plot(lidar_nis, "y--");
+      for(int i=0; i<lidar_nis.size(); ++i) {
+        lidar_nis.at(i) = 5.991;
+      }
+      plt::plot(lidar_nis, "y--");
+      plt::title("Lidar NIS");
+      plt::save("../images/lidar_nis.png");
+      plt::clf();
+      lidar_nis.clear();
+    }
+    if(radar_nis.size()> 0){
+      plt::plot(radar_nis, "r.");
+      for(int i=0; i<radar_nis.size(); ++i) {
+        radar_nis.at(i) = 0.352;
+      }
+      plt::plot(radar_nis, "y--");
+      for(int i=0; i<radar_nis.size(); ++i) {
+        radar_nis.at(i) = 7.815;
+      }
+      plt::plot(radar_nis, "y--");
+      plt::title("Radar NIS");
+      plt::save("../images/radar_nis.png");
+      radar_nis.clear();
+    }
     ws.close();
     std::cout << "Disconnected" << std::endl;
   });

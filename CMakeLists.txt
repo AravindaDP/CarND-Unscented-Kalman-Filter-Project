@@ -17,7 +17,11 @@ link_directories(/usr/local/Cellar/libuv/1*/lib)
 endif(${CMAKE_SYSTEM_NAME} MATCHES "Darwin") 
 
 add_executable(UnscentedKF ${sources})
-target_link_libraries(UnscentedKF z ssl uv uWS)
+if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+  target_link_libraries(UnscentedKF z ssl uv uWS python2.7)
+else()
+  target_link_libraries(UnscentedKF z ssl uv uWS python)
+endif()
 
 # Download and unpack googletest at configure time
 configure_file(CMakeLists.txt.in googletest-download/CMakeLists.txt)

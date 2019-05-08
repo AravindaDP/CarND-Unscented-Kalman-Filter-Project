@@ -44,10 +44,10 @@ class UKF:
         self._P.zero(5, 5)
 
         # Process noise standard deviation longitudinal acceleration in m/s^2
-        self._std_a = 3
+        self._std_a = 0.58
 
         # Process noise standard deviation yaw acceleration in rad/s^2
-        self._std_yawdd = 1
+        self._std_yawdd = 0.57
   
         """
         DO NOT MODIFY measurement noise values below.
@@ -135,12 +135,12 @@ class UKF:
 
                 #max(standard deviation radius, standard deviation angle*radar distance)
                 #a crude estimation of maximum standard deviation in cartesian coordinates
-                std_rad = max(self._std_radr, self._std_radphi*ro)
+                std_rad = max(self._std_radr, self._std_radphi*ro)*2
                 self._P = Matrix([[std_rad*std_rad, 0, 0, 0, 0],
                                   [0, std_rad*std_rad, 0, 0, 0],
-                                  [0, 0, 9, 0, 0],
-                                  [0, 0, 0, 2.25, 0],
-                                  [0, 0, 0, 0, 0.0625]])
+                                  [0, 0, 9, 0, 0], #Assumming 95% of time speed is +/- 6m/s
+                                  [0, 0, 0, 2.25, 0], #Assuming 95% of the time angle is +/- 3rad
+                                  [0, 0, 0, 0, 0.0625]]) #Assuming 95% of the time angular speed +/- 0.5 rad/s
 
             #Initialize anything else here
             self._time_us = meas_package._timestamp
